@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Misunderstood Animals Adventure - T Hameeda BuSakhar</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-grad: linear-gradient(180deg, #1b2838 0%, #0d121d 100%);
+    --card-bg: rgba(255, 255, 255, 0.95);
+    --gold: #f39c12;
+    --gold-glow: #f1c40f;
+    --btn-color: #27ae60;
+    --btn-hover: #2ecc71;
+    --accent: #2980b9;
+  }
+  * { box-sizing: border-box; user-select: none; -webkit-user-select: none; margin: 0; padding: 0; }
+  body, html { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Nunito', sans-serif; }
+  
+  #game-container {
+    position: relative; width: 100vw; height: 100vh;
+    display: flex; justify-content: center; align-items: center;
+    background: #000;
+  }
+  canvas {
+    background: linear-gradient(to bottom, #4ca1af, #c4e0e5);
+    box-shadow: 0 0 30px rgba(0,0,0,0.8);
+    display: block;
+  }
+
+  /* Screens & Overlays */
+  .screen-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(10, 20, 30, 0.85); backdrop-filter: blur(4px);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    z-index: 50; color: #fff; text-align: center; padding: 20px;
+  }
+  .hidden { display: none !important; }
+
+  .glass-card {
+    background: var(--card-bg); color: #2c3e50; border-radius: 24px;
+    padding: 30px 40px; box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+    max-width: 520px; width: 90%; text-align: center; border: 4px solid var(--gold);
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+  h1 { font-family: 'Fredoka One', cursive; font-size: 2.2rem; color: #d35400; text-shadow: 2px 2px 0 #f39c12; margin-bottom: 8px; }
+  h2 { font-family: 'Fredoka One', cursive; font-size: 1.8rem; color: #2c3e50; margin-bottom: 12px; }
+  p { font-size: 1.1rem; margin-bottom: 15px; font-weight: 700; color: #555; }
+
+  .input-box {
+    width: 100%; padding: 14px 20px; font-size: 1.2rem; border-radius: 12px;
+    border: 3px solid #bdc3c7; outline: none; margin-bottom: 20px;
+    text-align: center; font-family: 'Nunito', sans-serif; font-weight: 800;
+  }
+  .input-box:focus { border-color: var(--accent); }
+
+  .btn {
+    background: var(--btn-color); color: white; border: none; border-radius: 50px;
+    padding: 14px 35px; font-size: 1.2rem; font-weight: 900; cursor: pointer;
+    box-shadow: 0 6px 0 #1e8449; transition: all 0.15s ease; display: inline-block;
+  }
+  .btn:hover { background: var(--btn-hover); transform: translateY(-2px); box-shadow: 0 8px 0 #1e8449; }
+  .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #1e8449; }
+  .btn-accent { background: var(--accent); box-shadow: 0 6px 0 #1c5980; }
+  .btn-accent:hover { background: #3498db; box-shadow: 0 8px 0 #1c5980; }
+
+  .footer-credit {
+    margin-top: 20px; font-size: 0.95rem; font-weight: 800; color: #7f8c8d;
+  }
+  .teacher-name { color: #8e44ad; font-weight: 900; }
+
+  /* HUD */
+  #hud {
+    position: absolute; top: 12px; left: 15px; right: 15px;
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 10; pointer-events: none;
+  }
+  .hud-badge {
+    background: rgba(255, 255, 255, 0.9); border: 2px solid #2c3e50;
+    padding: 6px 14px; border-radius: 30px; font-weight: 900; font-size: 1.05rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3); pointer-events: auto; display: flex; align-items: center; gap: 8px;
+  }
+
+  /* Question Modal */
+  .answers-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+  .ans-btn {
+    background: #ecf0f1; border: 2px solid #bdc3c7; border-radius: 12px;
+    padding: 12px 18px; font-size: 1rem; font-weight: 800; text-align: left;
+    cursor: pointer; transition: all 0.2s; color: #2c3e50;
+  }
+  .ans-btn:hover { background: #d5dbdb; border-color: var(--accent); }
+  .hint-box { margin-top: 12px; font-size: 0.95rem; color: #c0392b; font-weight: 800; }
+
+  /* Mobile Controls */
+  #touch-controls {
+    position: absolute; bottom: 15px; left: 15px; right: 15px;
+    display: flex; justify-content: space-between; z-index: 20; pointer-events: none;
+  }
+  .touch-group { display: flex; gap: 15px; pointer-events: auto; }
+  .t-btn {
+    width: 65px; height: 65px; border-radius: 50%; background: rgba(255, 255, 255, 0.4);
+    border: 3px solid rgba(255, 255, 255, 0.8); display: flex; justify-content: center;
+    align-items: center; font-size: 1.8rem; color: #fff; font-weight: 900;
+    backdrop-filter: blur(5px); touch-action: manipulation;
+  }
+  .t-btn:active { background: rgba(255, 255, 255, 0.8); color: #333; }
+
+  /* Dashboard modal */
+  .dash-table-wrap { max-height: 250px; overflow-y: auto; margin: 15px 0; border: 1px solid #ccc; border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: center; }
+  th { background: #34495e; color: #fff; position: sticky; top: 0; }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <canvas id="gameCanvas" width="900" height="500"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div style="display: flex; gap: 10px;">
+      <div class="hud-badge">❤️ <span id="lives-display">3</span></div>
+      <div class="hud-badge">🪙 <span id="coins-display">0</span>/5</div>
+      <div class="hud-badge">⭐ <span id="score-display">0</span></div>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button class="hud-badge" id="btn-sound" style="cursor: pointer;">🔊 Sound</button>
+      <button class="hud-badge" id="btn-pause" style="cursor: pointer;">⏸️ Pause</button>
+      <button class="hud-badge" id="btn-open-dash" style="cursor: pointer; background: #9b59b6; color: white;">👩‍‍🏫 Teacher</button>
+    </div>
+  </div>
+
+  <!-- Touch Controls -->
+  <div id="touch-controls" class="hidden">
+    <div class="touch-group">
+      <div class="t-btn" id="t-left">◀</div>
+      <div class="t-btn" id="t-right">▶</div>
+    </div>
+    <div class="touch-group">
+      <div class="t-btn" id="t-jump" style="background: rgba(39, 174, 96, 0.6);">▲</div>
+    </div>
+  </div>
+
+  <!-- Start Screen -->
+  <div id="start-screen" class="screen-overlay">
+    <div class="glass-card">
+      <h1>🌟 Misunderstood Animals Adventure 🌟</h1>
+      <p>Welcome, Explorer! Please enter your name:</p>
+      <input type="text" id="player-name-input" class="input-box" placeholder="Your Full Name..." maxlength="25">
+      <button id="btn-start-game" class="btn">START GAME 🎮</button>
+      <div class="footer-credit">
+        Created by: <span class="teacher-name">T Hameeda BuSakhar</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Question Popup Modal -->
+  <div id="question-screen" class="screen-overlay hidden">
+    <div class="glass-card" style="max-width: 600px;">
+      <h2 style="color: #2980b9;">📚 TIME FOR A QUESTION!</h2>
+      <p id="q-text" style="font-size: 1.15rem; color: #2c3e50; font-weight: 800;"></p>
+      <div class="answers-grid" id="q-options"></div>
+      <div id="q-feedback" class="hint-box hidden"></div>
+    </div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="gameover-screen" class="screen-overlay hidden">
+    <div class="glass-card">
+      <h1 style="color: #c0392b;">Game Over!</h1>
+      <p>Don't give up! Misunderstood creatures need your support!</p>
+      <button id="btn-retry" class="btn">Try Again 🔄</button>
+      <div class="footer-credit">Created by: <span class="teacher-name">T Hameeda BuSakhar</span></div>
+    </div>
+  </div>
+
+  <!-- End Game Screen -->
+  <div id="end-screen" class="screen-overlay hidden">
+    <div class="glass-card">
+      <h1>🏆 CONGRATULATIONS!</h1>
+      <h2 id="end-student-name" style="color: #27ae60;">Student Name</h2>
+      <p style="margin: 5px 0;">⭐ Score: <span id="end-score">0</span></p>
+      <p style="margin: 5px 0;">🪙 Coins: <span id="end-coins">0</span></p>
+      <p style="margin: 5px 0;">📚 Correct Answers: <span id="end-correct">0</span></p>
+      <p style="margin: 5px 0;">❤️ Lives Remaining: <span id="end-lives">0</span></p>
+      <br>
+      <button id="btn-submit-result" class="btn">SUBMIT MY RESULT 🚀</button>
+      <div class="footer-credit">Created by: <span class="teacher-name">T Hameeda BuSakhar</span></div>
+    </div>
+  </div>
+
+  <!-- Teacher Dashboard Modal -->
+  <div id="teacher-dashboard" class="screen-overlay hidden">
+    <div class="glass-card" style="max-width: 750px; width: 95%;">
+      <h2>👩‍🏫 Teacher Dashboard</h2>
+      <p>Teacher: <span class="teacher-name">T Hameeda BuSakhar</span></p>
+      
+      <div style="display: flex; gap: 10px; margin-bottom: 10px; justify-content: center;">
+        <input type="text" id="dash-search" placeholder="Search student name..." style="padding: 6px 12px; border-radius: 8px; border: 1px solid #999;">
+        <button id="btn-sort-score" class="btn btn-accent" style="padding: 6px 15px; font-size: 0.9rem;">Sort by Score</button>
+        <button id="btn-export-csv" class="btn" style="padding: 6px 15px; font-size: 0.9rem; background: #d35400; box-shadow: none;">Export CSV</button>
+      </div>
+
+      <div class="dash-table-wrap">
+        <table id="results-table">
+          <thead>
+            <tr>
+              <th>Student</th><th>Score</th><th>Correct</th><th>Wrong</th><th>Coins</th><th>Date</th><th>Time</th>
+            </tr>
+          </thead>
+          <tbody id="dash-table-body"></tbody>
+        </table>
+      </div>
+      <button id="btn-close-dash" class="btn btn-accent">Resume Game ◀</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ========================================================
+   1. QUESTION BANK (Exclusively from Impact 3, Pages 27-43)
+   ======================================================== */
+const questionBank = [
+  {
+    q: "Why are vampire bats crucial pollinators in ecosystems?",
+    opts: ["They only eat insects", "They help spread seeds of many plants", "They attack predators", "They live in water"],
+    ans: 1,
+    hint: "Think about page 34: like bees, bats are pollinators and help spread seeds!"
+  },
+  {
+    q: "According to page 28, how do snakes' skin feel to the touch?",
+    opts: ["Slimy and wet", "Smooth and dry", "Rough and dirty", "Sticky"],
+    ans: 1,
+    hint: "Page 28 clarifies the misconception: snake skin is smooth and dry, not slimy!"
+  },
+  {
+    q: "How do cockroaches keep themselves clean according to page 28?",
+    opts: ["They never clean themselves", "They wash in rivers", "They clean themselves as much as cats do", "They use soap"],
+    ans: 2,
+    hint: "Page 28 notes that cockroaches clean themselves constantly, just as cats do."
+  },
+  {
+    q: "Choose the correct modal: 'He refuses to go in the water. He _____ seen a jellyfish.' (Not sure)",
+    opts: ["must have", "might have", "should have", "can't have"],
+    ans: 1,
+    hint: "See grammar rules on page 32: 'might have' / 'could have' express being not sure."
+  },
+  {
+    q: "Choose the correct modal: 'That spider _____ been poisonous! They rushed her to hospital.' (Very sure)",
+    opts: ["could have", "might have", "must have", "may have"],
+    ans: 2,
+    hint: "Page 32: 'must have' is used when the speaker is very sure about the past."
+  },
+  {
+    q: "How do vampire bats actually consume blood? (Page 34)",
+    opts: ["They suck it through hollow fangs", "They lick it with their tongues", "They chew animal meat", "They swallow it whole"],
+    ans: 1,
+    hint: "Page 34 explains they make small cuts and lick blood with their tongues like a kitten."
+  },
+  {
+    q: "Choose the correct verb form: 'My mother will absolutely not let him _____ a lizard.' (Page 38)",
+    opts: ["to buy", "buy", "buying", "bought"],
+    ans: 1,
+    hint: "Page 38: Infinitives without 'to' follow causative verbs like 'make' and 'let'."
+  },
+  {
+    q: "Choose the correct form: 'He doesn't want _____ lizards.' (Page 38)",
+    opts: ["hold", "to hold", "holding", "held"],
+    ans: 1,
+    hint: "Page 38: 'want' is followed by an infinitive with 'to'."
+  },
+  {
+    q: "In the video 'Face-to-Face with a Leopard Seal', what did the seal bring to Paul Nicklen?",
+    opts: ["A seashell", "Penguins (prey)", "Fish hooks", "Coral"],
+    ans: 1,
+    hint: "Page 36: The leopard seal repeatedly offered penguins to the photographer."
+  },
+  {
+    q: "In 'A Day in the Life' (pp. 42-43), what breed was Jane's pet dog 'Cupcake'?",
+    opts: ["A golden retriever", "A German shepherd", "A pit bull", "A poodle"],
+    ans: 2,
+    hint: "Page 42: Kim's mother shouted: 'That dog's a pit bull, Kim!'."
+  },
+  {
+    q: "What medical benefit are scientists studying from vampire bats? (Page 34)",
+    opts: ["Antivenom for snakes", "Substances that help blood keep flowing", "Cures for toothaches", "Antibiotics from saliva"],
+    ans: 1,
+    hint: "Page 34: Substances in bat saliva keep blood flowing, potentially aiding stroke patients."
+  },
+  {
+    q: "Which word means 'something many believe, even though it isn't true'? (Page 30)",
+    opts: ["Misunderstanding", "Misconception", "Ecosystem", "Lethal"],
+    ans: 1,
+    hint: "Page 30: A 'misconception' is a wrong idea that people believe."
+  }
+];
+
+/* ========================================================
+   2. GAME ENGINE & AUDIO SYNTHESIS
+   ======================================================== */
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+// Web Audio API Sound Generator (No external MP3 files required)
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+let soundEnabled = true;
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playSound(type) {
+  if (!soundEnabled) return;
+  try {
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+
+    if (type === 'coin') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(1600, now + 0.12);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+      osc.start(now); osc.stop(now + 0.12);
+    } else if (type === 'jump') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.exponentialRampToValueAtTime(650, now + 0.15);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+      osc.start(now); osc.stop(now + 0.15);
+    } else if (type === 'correct') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.1);
+      osc.frequency.setValueAtTime(783.99, now + 0.2);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+      osc.start(now); osc.stop(now + 0.35);
+    } else if (type === 'hit') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.linearRampToValueAtTime(80, now + 0.25);
+      gain.gain.setValueAtTime(0.4, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+      osc.start(now); osc.stop(now + 0.25);
+    }
+  } catch(e) {}
+}
+
+/* ========================================================
+   3. GAME STATE & ENTITIES
+   ======================================================== */
+let gameState = {
+  playerName: "",
+  score: 0,
+  coins: 0,
+  totalCoins: 0,
+  lives: 3,
+  correctAnswers: 0,
+  wrongAnswers: 0,
+  isPaused: false,
+  isGameOver: false,
+  worldOffset: 0
+};
+
+// Player (Explorer Girl)
+const player = {
+  x: 100, y: 300, w: 32, h: 48,
+  vx: 0, vy: 0,
+  speed: 4.5,
+  jumpPower: -11,
+  grounded: false,
+  invulnerable: 0
+};
+
+// Platforms (Floating islands & ground)
+const platforms = [
+  {x: 0, y: 440, w: 2500, h: 60},
+  {x: 240, y: 340, w: 140, h: 20},
+  {x: 460, y: 260, w: 160, h: 20},
+  {x: 700, y: 320, w: 140, h: 20},
+  {x: 940, y: 230, w: 180, h: 20},
+  {x: 1220, y: 310, w: 140, h: 20},
+  {x: 1460, y: 240, w: 170, h: 20},
+  {x: 1750, y: 300, w: 180, h: 20},
+  {x: 2050, y: 220, w: 200, h: 20}
+];
+
+// Collectibles
+let coins = [
+  {x: 280, y: 300, taken: false}, {x: 330, y: 300, taken: false},
+  {x: 500, y: 220, taken: false}, {x: 560, y: 220, taken: false},
+  {x: 750, y: 280, taken: false}, {x: 980, y: 190, taken: false},
+  {x: 1040, y: 190, taken: false}, {x: 1260, y: 270, taken: false},
+  {x: 1510, y: 200, taken: false}, {x: 1800, y: 260, taken: false},
+  {x: 2100, y: 180, taken: false}, {x: 2160, y: 180, taken: false}
+];
+
+// Friendly Cartoon Obstacle Enemies (Wasps & Bats)
+let enemies = [
+  {x: 400, y: 410, w: 28, h: 28, vx: -1.5, minX: 350, maxX: 550, type: 'cockroach'},
+  {x: 820, y: 290, w: 26, h: 26, vx: 1.8, minX: 720, maxX: 870, type: 'wasp'},
+  {x: 1350, y: 410, w: 28, h: 28, vx: -1.5, minX: 1250, maxX: 1450, type: 'cockroach'},
+  {x: 1850, y: 270, w: 26, h: 26, vx: 1.5, minX: 1760, maxX: 1920, type: 'bat'}
+];
+
+const keys = { left: false, right: false, up: false };
+
+/* ========================================================
+   4. CONTROLS SETUP (KEYBOARD & TOUCH)
+   ======================================================== */
+window.addEventListener("keydown", (e) => {
+  if (e.code === "ArrowLeft" || e.code === "KeyA") keys.left = true;
+  if (e.code === "ArrowRight" || e.code === "KeyD") keys.right = true;
+  if (e.code === "ArrowUp" || e.code === "KeyW" || e.code === "Space") {
+    if (player.grounded) {
+      player.vy = player.jumpPower;
+      player.grounded = false;
+      playSound('jump');
+    }
+    keys.up = true;
+  }
+});
+window.addEventListener("keyup", (e) => {
+  if (e.code === "ArrowLeft" || e.code === "KeyA") keys.left = false;
+  if (e.code === "ArrowRight" || e.code === "KeyD") keys.right = false;
+  if (e.code === "ArrowUp" || e.code === "KeyW" || e.code === "Space") keys.up = false;
+});
+
+// Mobile virtual buttons
+const setupTouchBtn = (id, keyName) => {
+  const el = document.getElementById(id);
+  el.addEventListener("touchstart", (e) => { e.preventDefault(); initAudio(); if(keyName==='up'&&player.grounded){ player.vy=player.jumpPower; player.grounded=false; playSound('jump'); } keys[keyName] = true; });
+  el.addEventListener("touchend", (e) => { e.preventDefault(); keys[keyName] = false; });
+};
+setupTouchBtn("t-left", "left");
+setupTouchBtn("t-right", "right");
+setupTouchBtn("t-jump", "up");
+
+/* ========================================================
+   5. GAME LOOP & RENDERING
+   ======================================================== */
+function update() {
+  if (gameState.isPaused || gameState.isGameOver) return;
+
+  // Horizontal Movement
+  if (keys.left) player.vx = -player.speed;
+  else if (keys.right) player.vx = player.speed;
+  else player.vx = 0;
+
+  // Gravity
+  player.vy += 0.55;
+  player.x += player.vx;
+  player.y += player.vy;
+
+  // Platform collision
+  player.grounded = false;
+  for (let p of platforms) {
+    if (player.x + player.w > p.x && player.x < p.x + p.w &&
+        player.y + player.h >= p.y && player.y + player.h <= p.y + p.h + 12 &&
+        player.vy >= 0) {
+      player.y = p.y - player.h;
+      player.vy = 0;
+      player.grounded = true;
+    }
+  }
+
+  // Camera tracking
+  gameState.worldOffset = player.x - 200;
+
+  // Invulnerability timer
+  if (player.invulnerable > 0) player.invulnerable--;
+
+  // Enemy movement & collision
+  for (let e of enemies) {
+    e.x += e.vx;
+    if (e.x < e.minX || e.x > e.maxX) e.vx *= -1;
+
+    // Hit test
+    if (player.invulnerable === 0 &&
+        player.x + player.w > e.x && player.x < e.x + e.w &&
+        player.y + player.h > e.y && player.y < e.y + e.h) {
+      handlePlayerDamage();
+    }
+  }
+
+  // Coin collision
+  for (let c of coins) {
+    if (!c.taken &&
+        player.x + player.w > c.x && player.x < c.x + 22 &&
+        player.y + player.h > c.y && player.y < c.y + 22) {
+      c.taken = true;
+      gameState.coins++;
+      gameState.totalCoins++;
+      gameState.score += 20;
+      playSound('coin');
+      updateHUD();
+
+      // Question trigger at 5 coins
+      if (gameState.coins >= 5) {
+        gameState.coins = 0;
+        updateHUD();
+        triggerQuestionModal();
+      }
+    }
+  }
+
+  // Reach end of adventure
+  if (player.x > 2350) {
+    finishGame();
+  }
+}
+
+function handlePlayerDamage() {
+  gameState.lives--;
+  player.invulnerable = 60;
+  playSound('hit');
+  updateHUD();
+  if (gameState.lives <= 0) {
+    gameState.isGameOver = true;
+    document.getElementById("gameover-screen").classList.remove("hidden");
+  }
+}
+
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+  ctx.translate(-gameState.worldOffset, 0);
+
+  // Background Decor (Hills & Forest Trees)
+  ctx.fillStyle = "#81c784";
+  ctx.beginPath();
+  ctx.arc(300, 480, 260, 0, Math.PI * 2);
+  ctx.arc(800, 500, 320, 0, Math.PI * 2);
+  ctx.arc(1400, 480, 300, 0, Math.PI * 2);
+  ctx.arc(2000, 520, 350, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Platforms
+  for (let p of platforms) {
+    ctx.fillStyle = "#5d4037"; // Soil
+    ctx.fillRect(p.x, p.y, p.w, p.h);
+    ctx.fillStyle = "#4caf50"; // Grass top
+    ctx.fillRect(p.x, p.y, p.w, 8);
+  }
+
+  // Coins (Shiny gold)
+  for (let c of coins) {
+    if (!c.taken) {
+      ctx.fillStyle = "#f1c40f";
+      ctx.beginPath();
+      ctx.arc(c.x + 10, c.y + 10, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#d68910";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 11px Nunito";
+      ctx.fillText("★", c.x + 6, c.y + 14);
+    }
+  }
+
+  // Cartoon Enemies
+  for (let e of enemies) {
+    ctx.fillStyle = e.type === 'wasp' ? "#f39c12" : (e.type === 'bat' ? "#8e44ad" : "#795548");
+    ctx.beginPath();
+    ctx.roundRect(e.x, e.y, e.w, e.h, [8]);
+    ctx.fill();
+    // Eyes
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(e.x + 4, e.y + 5, 5, 5);
+    ctx.fillRect(e.x + 15, e.y + 5, 5, 5);
+    ctx.fillStyle = "#000";
+    ctx.fillRect(e.x + 6, e.y + 7, 2, 2);
+    ctx.fillRect(e.x + 17, e.y + 7, 2, 2);
+  }
+
+  // Player (Explorer Girl Character)
+  if (player.invulnerable % 8 < 4) {
+    // Body / Outfit
+    ctx.fillStyle = "#3498db";
+    ctx.fillRect(player.x + 6, player.y + 18, 20, 20);
+    // Face
+    ctx.fillStyle = "#fcd5b5";
+    ctx.fillRect(player.x + 6, player.y + 4, 20, 14);
+    // Explorer Cap
+    ctx.fillStyle = "#d35400";
+    ctx.fillRect(player.x + 3, player.y, 26, 6);
+    // Shoes
+    ctx.fillStyle = "#2c3e50";
+    ctx.fillRect(player.x + 6, player.y + 38, 8, 10);
+    ctx.fillRect(player.x + 18, player.y + 38, 8, 10);
+  }
+
+  // Trophy / Goal at end
+  ctx.fillStyle = "#f39c12";
+  ctx.font = "34px sans-serif";
+  ctx.fillText("🏆", 2360, 420);
+
+  ctx.restore();
+
+  requestAnimationFrame(() => {
+    update();
+    render();
+  });
+}
+
+/* ========================================================
+   6. QUESTION SYSTEM & HUD
+   ======================================================== */
+function updateHUD() {
+  document.getElementById("lives-display").innerText = gameState.lives;
+  document.getElementById("coins-display").innerText = gameState.coins;
+  document.getElementById("score-display").innerText = gameState.score;
+}
+
+let currentQ = null;
+function triggerQuestionModal() {
+  gameState.isPaused = true;
+  const qModal = document.getElementById("question-screen");
+  const qText = document.getElementById("q-text");
+  const qOpts = document.getElementById("q-options");
+  const qFeed = document.getElementById("q-feedback");
+
+  qFeed.classList.add("hidden");
+  qOpts.innerHTML = "";
+
+  currentQ = questionBank[Math.floor(Math.random() * questionBank.length)];
+  qText.innerText = currentQ.q;
+
+  currentQ.opts.forEach((opt, idx) => {
+    const b = document.createElement("button");
+    b.className = "ans-btn";
+    b.innerText = `${String.fromCharCode(65 + idx)}. ${opt}`;
+    b.onclick = () => handleAnswer(idx);
+    qOpts.appendChild(b);
+  });
+
+  qModal.classList.remove("hidden");
+}
+
+function handleAnswer(selectedIdx) {
+  const qFeed = document.getElementById("q-feedback");
+  if (selectedIdx === currentQ.ans) {
+    playSound('correct');
+    gameState.score += 100;
+    gameState.correctAnswers++;
+    updateHUD();
+    qFeed.style.color = "#27ae60";
+    qFeed.innerText = "🎉 Correct! +100 points!";
+    qFeed.classList.remove("hidden");
+    setTimeout(() => {
+      document.getElementById("question-screen").classList.add("hidden");
+      gameState.isPaused = false;
+    }, 1100);
+  } else {
+    playSound('hit');
+    gameState.wrongAnswers++;
+    qFeed.style.color = "#c0392b";
+    qFeed.innerText = `❌ Try again! Hint: ${currentQ.hint}`;
+    qFeed.classList.remove("hidden");
+  }
+}
+
+/* ========================================================
+   7. RESULTS & CLOUD-READY TEACHER DASHBOARD
+   ======================================================== */
+function finishGame() {
+  gameState.isPaused = true;
+  document.getElementById("hud").classList.add("hidden");
+  document.getElementById("touch-controls").classList.add("hidden");
+  document.getElementById("end-student-name").innerText = gameState.playerName;
+  document.getElementById("end-score").innerText = gameState.score;
+  document.getElementById("end-coins").innerText = gameState.totalCoins;
+  document.getElementById("end-correct").innerText = `${gameState.correctAnswers}/${gameState.correctAnswers + gameState.wrongAnswers}`;
+  document.getElementById("end-lives").innerText = gameState.lives;
+  document.getElementById("end-screen").classList.remove("hidden");
+}
+
+function saveStudentResult() {
+  const d = new Date();
+  const newRecord = {
+    student: gameState.playerName,
+    score: gameState.score,
+    correct: gameState.correctAnswers,
+    wrong: gameState.wrongAnswers,
+    coins: gameState.totalCoins,
+    date: d.toLocaleDateString(),
+    time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+
+  // Local sync (Indexed in localStorage & can be sent directly to Firebase)
+  let records = JSON.parse(localStorage.getItem("misunderstood_game_records") || "[]");
+  records.push(newRecord);
+  localStorage.setItem("misunderstood_game_records", JSON.stringify(records));
+
+  /* FIREBASE INTEGRATION HOOK (جاهز للتفعيل المباشر) */
+  if (window.firebaseDB) {
+    window.firebaseDB.ref("results").push(newRecord);
+  }
+
+  alert("🌟 Result saved successfully! Thank you!");
+  location.reload();
+}
+
+function renderTeacherDashboard() {
+  const tbody = document.getElementById("dash-table-body");
+  tbody.innerHTML = "";
+  let records = JSON.parse(localStorage.getItem("misunderstood_game_records") || "[]");
+  
+  const searchFilter = document.getElementById("dash-search").value.toLowerCase();
+  records.filter(r => r.student.toLowerCase().includes(searchFilter)).forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td><b>${r.student}</b></td><td>${r.score}</td><td>${r.correct}</td><td>${r.wrong}</td><td>${r.coins}</td><td>${r.date}</td><td>${r.time}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// Export CSV for Excel
+function exportToCSV() {
+  let records = JSON.parse(localStorage.getItem("misunderstood_game_records") || "[]");
+  if (!records.length) return alert("No records found!");
+  let csv = "Student Name,Score,Correct,Wrong,Coins,Date,Time\n";
+  records.forEach(r => {
+    csv += `"${r.student}",${r.score},${r.correct},${r.wrong},${r.coins},"${r.date}","${r.time}"\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Student_Results_T_Hameeda_${Date.now()}.csv`;
+  a.click();
+}
+
+/* ========================================================
+   8. EVENT LISTENERS & LIFECYCLE
+   ======================================================== */
+document.getElementById("btn-start-game").onclick = () => {
+  const nameInput = document.getElementById("player-name-input").value.trim();
+  if (!nameInput) {
+    alert("Please enter your name first!");
+    return;
+  }
+  gameState.playerName = nameInput;
+  document.getElementById("start-screen").classList.add("hidden");
+  document.getElementById("hud").classList.remove("hidden");
+  if ('ontouchstart' in window) {
+    document.getElementById("touch-controls").classList.remove("hidden");
+  }
+  initAudio();
+  updateHUD();
+  render();
+};
+
+document.getElementById("btn-retry").onclick = () => location.reload();
+document.getElementById("btn-submit-result").onclick = saveStudentResult;
+
+document.getElementById("btn-open-dash").onclick = () => {
+  gameState.isPaused = true;
+  renderTeacherDashboard();
+  document.getElementById("teacher-dashboard").classList.remove("hidden");
+};
+document.getElementById("btn-close-dash").onclick = () => {
+  document.getElementById("teacher-dashboard").classList.add("hidden");
+  gameState.isPaused = false;
+};
+document.getElementById("btn-sort-score").onclick = () => {
+  let records = JSON.parse(localStorage.getItem("misunderstood_game_records") || "[]");
+  records.sort((a,b) => b.score - a.score);
+  localStorage.setItem("misunderstood_game_records", JSON.stringify(records));
+  renderTeacherDashboard();
+};
+document.getElementById("dash-search").oninput = renderTeacherDashboard;
+document.getElementById("btn-export-csv").onclick = exportToCSV;
+
+document.getElementById("btn-sound").onclick = () => {
+  soundEnabled = !soundEnabled;
+  document.getElementById("btn-sound").innerText = soundEnabled ? "🔊 Sound" : "🔇 Muted";
+};
+document.getElementById("btn-pause").onclick = () => {
+  gameState.isPaused = !gameState.isPaused;
+  document.getElementById("btn-pause").innerText = gameState.isPaused ? "▶️ Play" : "⏸️ Pause";
+};
+</script>
+</body>
+</html>
